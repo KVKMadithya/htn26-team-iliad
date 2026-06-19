@@ -1,0 +1,1 @@
+![System Diagram](./Screenshot%202026-06-20%20041724.png)
