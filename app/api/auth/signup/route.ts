@@ -1,14 +1,24 @@
 import { asText, runStatement } from '@/lib/platform-db'
+import { initializeApp, getApps, getApp } from 'firebase/app'
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
+
+// Firebase Config
+const firebaseConfig = {
+  apiKey: 'AIzaSyDIAyfAHo_trhrobaYs87X8BkTq1W2sOs0',
+  authDomain: 'nova-bank-hackathon.firebaseapp.com',
+  projectId: 'nova-bank-hackathon',
+  storageBucket: 'nova-bank-hackathon.firebasestorage.app',
+  messagingSenderId: '901221160510',
+  appId: '1:901221160510:web:034bc3e4779cb2838aa36f'
+}
+
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp()
+const auth = getAuth(app)
 
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}))
-
-    // Extract and safely escape data
-    const accountNumber = asText(body.accountNumber).replace(/'/g, "''")
-    const accountName = asText(body.accountName).replace(/'/g, "''")
-    const email = asText(body.email).replace(/'/g, "''")
-    const password = asText(body.password).replace(/'/g, "''")
+    const { accountNumber, accountName, email, password } = body
 
     if (!accountNumber || !accountName || !email || !password) {
       return Response.json(
@@ -17,54 +27,52 @@ export async function POST(request: Request) {
       )
     }
 
-    // FIX: Generate a truly unique username by appending a random suffix
-    const baseUsername = email.split('@')[0].toLowerCase()
-    const uniqueSuffix = Math.floor(1000 + Math.random() * 9000)
-    const username = `${baseUsername}${uniqueSuffix}`
+    // 1. Create User in Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    )
+    const uid = userCredential.user.uid // This is the string ID
 
-    const dummyNic = Math.floor(100000000 + Math.random() * 900000000) + 'V'
+    // 2. Escape data for SQL
+    const escape = (val: string) => val.replace(/'/g, "''")
+    const sanitizedName = escape(accountName)
+    const sanitizedAccount = escape(accountNumber)
+    const dummyNic = `${Math.floor(100000000 + Math.random() * 900000000)}V`
 
-    // 1. Insert user
-    const userInsert = await runStatement(`
-      INSERT INTO users (username, password, full_name, email, role, nic)
-      VALUES ('${username}', '${password}', '${accountName}', '${email}', 'customer', '${dummyNic}')
-      RETURNING id
-    `)
+    // 3. Save profile to SQL
+    // We use the Firebase UID as the primary key here.
+    const userSql = `
+      INSERT INTO users (id, username, full_name, email, role, nic)
+      VALUES ('${uid}', '${email.split('@')[0]}', '${sanitizedName}', '${email}', 'customer', '${dummyNic}')
+    `
+    await runStatement(userSql)
 
-    const newUserId = userInsert.rows[0].id
-
-    // 2. Link bank account
-    await runStatement(`
+    // 4. Link bank account
+    const accountSql = `
       INSERT INTO accounts (user_id, account_number, account_name, balance)
-      VALUES (${newUserId}, '${accountNumber}', '${accountName}', 0)
-    `)
+      VALUES ('${uid}', '${sanitizedAccount}', '${sanitizedName}', 0)
+    `
+    await runStatement(accountSql)
 
     return Response.json({ ok: true, message: 'Account created successfully!' })
   } catch (reason: any) {
-    // CRITICAL: Log the full error to your terminal so we can see the column name
-    console.error('FULL SIGNUP ERROR:', reason)
+    console.error('SIGNUP ERROR:', reason)
 
-    const errorMessage = reason.message?.toLowerCase() || ''
-
-    if (errorMessage.includes('unique constraint')) {
-      // Try to identify if it's email, account_number, or username
-      let field = 'data'
-      if (errorMessage.includes('email')) field = 'email'
-      if (errorMessage.includes('account_number')) field = 'account number'
-
+    // Firebase Error Handling
+    if (reason.code === 'auth/email-already-in-use') {
       return Response.json(
-        {
-          ok: false,
-          error: `That ${field} is already registered.`
-        },
+        { ok: false, error: 'Email is already registered.' },
         { status: 400 }
       )
     }
 
+    // DB Error Handling
     return Response.json(
       {
         ok: false,
-        error: 'Database error. Check terminal logs.'
+        error: 'Database error. Ensure you ran the ALTER TABLE commands.'
       },
       { status: 500 }
     )

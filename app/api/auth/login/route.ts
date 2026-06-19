@@ -1,32 +1,27 @@
-import { asText, runStatement, serviceFailure } from '@/lib/platform-db'
+import { asText, runStatement } from '@/lib/platform-db'
+import { initializeApp, getApps, getApp } from 'firebase/app'
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
 
-export async function GET() {
-  try {
-    // SECURITY FIX: Removed 'password' from the SELECT statement.
-    // We never want to send passwords to the client in a GET request!
-    const result = await runStatement(
-      'SELECT id, username, role, full_name, nic, email FROM users ORDER BY id'
-    )
-
-    return Response.json({
-      ok: true,
-      note: 'Login reference data.',
-      users: result.rows || []
-    })
-  } catch (reason) {
-    return serviceFailure(reason)
-  }
+// Firebase Initialization
+const firebaseConfig = {
+  apiKey: 'AIzaSyDIAyfAHo_trhrobaYs87X8BkTq1W2sOs0',
+  authDomain: 'nova-bank-hackathon.firebaseapp.com',
+  projectId: 'nova-bank-hackathon',
+  storageBucket: 'nova-bank-hackathon.firebasestorage.app',
+  messagingSenderId: '901221160510',
+  appId: '1:901221160510:web:034bc3e4779cb2838aa36f'
 }
+
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp()
+const auth = getAuth(app)
 
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}))
-
-    // Explicitly grab the 'account' field from your frontend's LoginPage state
-    const rawUsername = asText(body.account)
+    const rawUsername = asText(
+      body.username || body.account || body.email
+    )?.trim()
     const rawPassword = asText(body.password)
-
-    console.log('Login attempt for:', rawUsername) // Check your terminal!
 
     if (!rawUsername || !rawPassword) {
       return Response.json(
@@ -35,51 +30,78 @@ export async function POST(request: Request) {
       )
     }
 
-    // SECURITY FIX: Basic SQL Injection Prevention
-    // Escaping single quotes prevents malicious users from breaking the SQL syntax.
-    const username = rawUsername.replace(/'/g, "''")
-    const password = rawPassword.replace(/'/g, "''")
+    // 1. Authenticate with Firebase
+    const email = rawUsername.includes('@')
+      ? rawUsername
+      : `${rawUsername}@novabank.com`
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      rawPassword
+    )
+    const uid = userCredential.user.uid
 
-    const sql = `
-  SELECT id, username, role, full_name, email
-  FROM users
-  WHERE LOWER(username) = LOWER('${username}') AND password = '${password}'
-  LIMIT 1
-`
-    const result = await runStatement(sql)
+    // 2. Fetch User Profile from SQL Database using Firebase UID
+    // This assumes you saved the Firebase UID as the 'id' in your users table
+    const result = await runStatement(`
+      SELECT id, username, role, full_name, email 
+      FROM users 
+      WHERE id = '${uid}' 
+      LIMIT 1
+    `)
 
     if (!result.rows || result.rows.length === 0) {
       return Response.json(
-        {
-          ok: false,
-          error: 'Invalid username or password.'
-          // SECURITY FIX: Removed the SQL string leak
-        },
-        { status: 401 }
+        { ok: false, error: 'User profile not found in database.' },
+        { status: 404 }
       )
     }
 
     const user = result.rows[0]
-    const headers = new Headers()
 
-    // Sets the browser cookies so the user actually stays logged in
-    headers.append('set-cookie', `user_id=${user.id}; Path=/; SameSite=Lax`)
-    headers.append('set-cookie', `role=${user.role}; Path=/; SameSite=Lax`)
+    // 3. Set Cookies (Maintains compatibility with your existing frontend)
+    const headers = new Headers()
+    headers.append(
+      'Set-Cookie',
+      `user_id=${user.id}; Path=/; HttpOnly; SameSite=Lax`
+    )
+    headers.append(
+      'Set-Cookie',
+      `role=${user.role}; Path=/; HttpOnly; SameSite=Lax`
+    )
 
     return Response.json(
       {
         ok: true,
-        token: Buffer.from(`${user.id}:${user.role}:session-token`).toString(
-          'base64'
-        ),
-        user
-        // SECURITY FIX: Removed the SQL string leak
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          full_name: user.full_name,
+          email: user.email
+        }
       },
       { headers }
     )
   } catch (reason: any) {
+    console.error('FIREBASE LOGIN ERROR:', reason)
+
+    // Handle Firebase Auth errors
+    if (
+      reason.code === 'auth/invalid-credential' ||
+      reason.code === 'auth/user-not-found'
+    ) {
+      return Response.json(
+        { ok: false, error: 'Invalid username or password.' },
+        { status: 401 }
+      )
+    }
+
     return Response.json(
-      { ok: false, error: reason.message || 'Server error' },
+      {
+        ok: false,
+        error: 'Login failed. Please try again.'
+      },
       { status: 500 }
     )
   }

@@ -15,7 +15,7 @@ export default function SignUpPage() {
     confirmPassword: ''
   })
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false) // 🔒 The anti-double-click lock
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -24,36 +24,43 @@ export default function SignUpPage() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // If it's already submitting, ignore extra clicks
+    // 1. Guard against double submission
     if (isLoading) return
 
+    // 2. Clear previous errors and validate
     setError('')
-
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match!')
       return
     }
 
-    setIsLoading(true) // Lock the button
+    setIsLoading(true)
 
     try {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          accountNumber: formData.accountNumber.trim(),
+          accountName: formData.accountName.trim(),
+          branch: formData.branch.trim(),
+          email: formData.email.trim(),
+          password: formData.password
+        })
       })
 
+      const data = await res.json().catch(() => ({ error: 'Unknown error' }))
+
       if (res.ok) {
-        alert('Account created! Please log in.')
+        alert('Account created! You can now log in.')
         router.push('/login')
       } else {
-        const data = await res.json()
         setError(data.error || 'Failed to create account.')
       }
     } catch (err) {
       setError('Network error. Please try again.')
     } finally {
-      setIsLoading(false) // Unlock the button
+      setIsLoading(false)
     }
   }
 
@@ -96,19 +103,21 @@ export default function SignUpPage() {
                 type={field.type}
                 value={formData[field.name as keyof typeof formData]}
                 onChange={handleChange}
+                disabled={isLoading}
                 required
-                className="h-[64px] rounded-[40px] border-0 bg-[#d9d9d9] px-7 text-lg text-black outline-none"
+                className="h-[64px] w-full rounded-[40px] border-0 bg-[#d9d9d9] px-7 text-lg text-black outline-none transition-opacity disabled:opacity-50"
               />
             </div>
           ))}
 
           {error && (
-            <p className="text-red-500 text-center font-bold">{error}</p>
+            <p className="text-red-500 text-center font-bold animate-in fade-in">
+              {error}
+            </p>
           )}
 
-          <div className="mt-8 flex justify-center" onClick={handleSignUp}>
-            {/* The button now visually reacts to being clicked */}
-            <AuthButton disabled={isLoading}>
+          <div className="mt-8 flex justify-center">
+            <AuthButton type="submit" disabled={isLoading}>
               {isLoading ? 'CREATING...' : 'SIGN UP'}
             </AuthButton>
           </div>
