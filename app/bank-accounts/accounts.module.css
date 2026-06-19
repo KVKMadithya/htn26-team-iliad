@@ -1,5 +1,5 @@
-/* ===== ROOT VARIABLES ===== */
-:root {
+/* ===== ROOT VARIABLES (Scoped to Page) ===== */
+.accountsPage {
   /* Colors */
   --color-primary: #450043;
   --color-primary-hover: #5a0058;
@@ -62,10 +62,8 @@
   --card-height: 190px;
   --form-width: 650px;
   --avatar-size: 40px;
-}
 
-/* ===== GLOBAL STYLES ===== */
-.accountsPage {
+  /* Global Page Styles merged into container */
   width: 100vw;
   min-height: 100vh;
   background: var(--color-background);
@@ -440,15 +438,12 @@
 
 /* Tablet */
 @media (max-width: 768px) {
-  :root {
+  .accountsPage {
     --card-width: 100%;
     --card-height: 160px;
     --form-width: 100%;
     --font-4xl: 22px;
     --font-3xl: 20px;
-  }
-  
-  .accountsPage {
     flex-direction: column;
   }
   
@@ -477,7 +472,7 @@
 
 /* Mobile */
 @media (max-width: 480px) {
-  :root {
+  .accountsPage {
     --card-height: 150px;
     --avatar-size: 35px;
     --font-4xl: 20px;
@@ -532,7 +527,7 @@
 
 /* Small Mobile */
 @media (max-width: 360px) {
-  :root {
+  .accountsPage {
     --card-height: 130px;
     --font-xl: 14px;
     --font-md: 12px;
@@ -565,7 +560,7 @@
 
 /* Large Screens */
 @media (min-width: 1200px) {
-  :root {
+  .accountsPage {
     --card-width: 580px;
     --card-height: 200px;
     --form-width: 700px;

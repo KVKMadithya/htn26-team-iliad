@@ -40,7 +40,7 @@ services:
     env_file:
       - .env.local
     ports:
-      - "5432:5432"
+      - "5433:5432" # Changed host port to 5433 to prevent clashing with your backend DB
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

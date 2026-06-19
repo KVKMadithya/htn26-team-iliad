@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import Image from 'next/image'
+import React, { useState } from 'react'
 import Sidebar from '@/components/sidebar'
 
 type Errors = Partial<{
@@ -9,6 +8,7 @@ type Errors = Partial<{
   accountNumber: string
   accountName: string
   bank: string
+  server: string
 }>
 
 export default function Home() {
@@ -18,9 +18,9 @@ export default function Home() {
   const [bank, setBank] = useState('')
   const [description, setDescription] = useState('')
   const [errors, setErrors] = useState<Errors>({})
-  const [step, setStep] = useState<'form' | 'confirm' | 'success' | 'failure'>(
-    'form'
-  )
+  const [step, setStep] = useState<
+    'form' | 'confirm' | 'success' | 'failure' | 'loading'
+  >('form')
   const [confirmation, setConfirmation] = useState<string | null>(null)
 
   function validate() {
@@ -34,7 +34,6 @@ export default function Home() {
       e.accountNumber = 'Enter a valid account number'
 
     if (!accountName) e.accountName = 'Account name is required'
-
     if (!bank) e.bank = 'Select a bank'
 
     setErrors(e)
@@ -44,17 +43,43 @@ export default function Home() {
   function handleNext(e: React.FormEvent) {
     e.preventDefault()
     if (validate()) {
-      // show confirmation step first
       setStep('confirm')
     }
   }
 
-  function handleTransfer(e: React.FormEvent) {
+  async function handleTransfer(e: React.FormEvent) {
     e.preventDefault()
-    // simulate transfer completion and show success page
-    const conf = String(Math.floor(10000000 + Math.random() * 89999999))
-    setConfirmation(conf)
-    setStep('success' as any)
+    setStep('loading')
+
+    try {
+      const res = await fetch('/api/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toAccount: accountNumber,
+          amount: amount,
+          description: description
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || !data.ok) {
+        setErrors({
+          server: data.error || 'Transfer failed due to a server error.'
+        })
+        setStep('failure')
+      } else {
+        setConfirmation(
+          data.transaction.id ||
+            String(Math.floor(10000000 + Math.random() * 89999999))
+        )
+        setStep('success')
+      }
+    } catch (err) {
+      setErrors({ server: 'Network error. Please try again later.' })
+      setStep('failure')
+    }
   }
 
   return (
@@ -81,6 +106,7 @@ export default function Home() {
               </div>
             </div>
           </div>
+
           {step === 'form' ? (
             <form onSubmit={handleNext} className="transfer-card p-8">
               <div className="grid grid-cols-12 gap-y-6 gap-x-8 items-center">
@@ -172,7 +198,7 @@ export default function Home() {
                 </button>
               </div>
             </form>
-          ) : step === 'confirm' ? (
+          ) : step === 'confirm' || step === 'loading' ? (
             <div className="transfer-card p-8">
               <h3 className="text-center text-2xl font-semibold mb-6">
                 Confirm Transfer
@@ -194,23 +220,24 @@ export default function Home() {
                 </div>
                 <div className="flex justify-center gap-4">
                   <button
-                    onClick={() => setStep('failure')}
+                    onClick={() => setStep('form')}
                     className="next-btn"
                     aria-label="back"
+                    disabled={step === 'loading'}
                   >
                     BACK
                   </button>
                   <button
                     onClick={handleTransfer}
                     className="next-btn transfer-btn"
+                    disabled={step === 'loading'}
                   >
-                    TRANSFER
+                    {step === 'loading' ? 'PROCESSING...' : 'TRANSFER'}
                   </button>
                 </div>
               </div>
             </div>
           ) : step === 'success' ? (
-            // success page
             <div className="transfer-card p-8">
               <div className="relative">
                 <div className="success-check inside-check">
@@ -238,18 +265,15 @@ export default function Home() {
                     />
                   </svg>
                 </div>
-
                 <h3 className="text-center text-2xl font-semibold mb-4">
                   Transfer Successful!
                 </h3>
                 <p className="text-center text-sm text-gray-500 mb-10">
                   Confirmation number : {confirmation}
                 </p>
-
                 <div className="flex justify-center">
                   <button
                     onClick={() => {
-                      // go back to home (reset form)
                       setAmount('')
                       setAccountNumber('')
                       setAccountName('')
@@ -267,7 +291,6 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            // failure page
             <div className="transfer-card p-8">
               <div className="relative">
                 <div className="success-check inside-check">
@@ -298,31 +321,18 @@ export default function Home() {
                     </text>
                   </svg>
                 </div>
-
                 <h3 className="text-center text-2xl font-semibold mb-4">
                   Transaction Failed!
                 </h3>
                 <p className="text-center text-sm text-gray-500 mb-6">
-                  Insufficient Balance
-                  <br />
-                  Current Balance is: Rs.500
+                  {errors.server || 'An unknown error occurred.'}
                 </p>
-
                 <div className="flex justify-center">
                   <button
-                    onClick={() => {
-                      setAmount('')
-                      setAccountNumber('')
-                      setAccountName('')
-                      setBank('')
-                      setDescription('')
-                      setErrors({})
-                      setConfirmation(null)
-                      setStep('form')
-                    }}
+                    onClick={() => setStep('form')}
                     className="transfer-btn success-btn"
                   >
-                    <span className="mr-3">‹</span> BACK TO HOME
+                    <span className="mr-3">‹</span> TRY AGAIN
                   </button>
                 </div>
               </div>
