@@ -108,21 +108,24 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-top">
-        {/* Logo */}
+        {/* Logo Area */}
         <div className="logo-wrapper">
-          <img src="/loginlogo.png" alt="logo" className="logo-img" />
+          <div className="logo-container">
+            <span className="logo-letter">N</span>
+          </div>
           <h1 className="brand-name">NOVA BANK</h1>
         </div>
 
-        {/* Menu */}
+        {/* Navigation Menu */}
         <nav className="menu">
           {menuItems.map((item) => {
             const isActive = pathname === item.path
             return (
               <Link key={item.label} href={item.path} className="menu-link">
                 <button className={`menu-item ${isActive ? 'active' : ''}`}>
+                  {isActive && <div className="active-indicator" />}
                   {item.label === 'DASHBOARD' && <LayoutGrid size={18} />}
-                  {item.label}
+                  <span className="menu-label">{item.label}</span>
                 </button>
               </Link>
             )
@@ -131,20 +134,28 @@ export default function Sidebar() {
       </div>
 
       <div className="sidebar-footer">
-        <Settings size={24} />
-        <HelpCircle size={24} />
+        <div className="footer-icon">
+          <Settings size={22} />
+        </div>
+        <div className="footer-icon">
+          <HelpCircle size={22} />
+        </div>
       </div>
 
       <style jsx>{`
         .sidebar {
-          width: 250px;
-          background: #450043;
+          width: 280px;
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border-right: 1px solid rgba(255, 255, 255, 0.05);
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          border-radius: 0 25px 25px 0;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
           flex-shrink: 0;
+          position: relative;
+          z-index: 20;
+          transition: all 0.3s ease;
         }
 
         .sidebar-top {
@@ -156,30 +167,39 @@ export default function Sidebar() {
           display: flex;
           align-items: center;
           gap: 1rem;
-          padding: 1rem 0.75rem;
+          padding: 2.5rem 2rem 2rem;
         }
 
-        .logo-img {
-          width: 75px;
-          height: 75px;
+        .logo-container {
+          width: 48px;
+          height: 48px;
+          background: #ffffff;
           border-radius: 50%;
-          background: white;
-          object-fit: cover;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .logo-letter {
+          color: #312e81; /* Deep indigo */
+          font-size: 24px;
+          font-weight: 900;
+          letter-spacing: -1px;
         }
 
         .brand-name {
           color: white;
-          font-size: 18px;
+          font-size: 20px;
           font-weight: 800;
-          letter-spacing: 0.5px;
+          letter-spacing: 1px;
         }
 
         .menu {
-          margin-top: 3rem;
           padding: 0 1rem;
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: 0.5rem;
         }
 
         .menu-link {
@@ -187,44 +207,89 @@ export default function Sidebar() {
         }
 
         .menu-item {
-          height: 50px;
+          height: 52px;
+          width: 100%;
           border: none;
           background: transparent;
-          color: white;
+          color: #a1a1aa; /* Zinc-400 */
           text-align: left;
           padding: 0 1.5rem;
-          border-radius: 25px;
-          transition: all 0.3s;
+          border-radius: 16px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           font-weight: 600;
-          font-size: 0.9rem;
+          font-size: 13px;
+          letter-spacing: 0.5px;
           display: flex;
           align-items: center;
-          gap: 0.75rem;
+          gap: 1rem;
           cursor: pointer;
-          width: 100%;
+          position: relative;
+          overflow: hidden;
         }
 
+        .menu-label {
+          position: relative;
+          z-index: 10;
+        }
+
+        /* Hover Effect for Inactive Items */
+        .menu-item:not(.active):hover {
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.05);
+          transform: translateX(8px);
+        }
+
+        /* Active State */
         .menu-item.active {
-          background: #9a5c97;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.1);
+          box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .menu-item:hover {
-          background: #9a5c97;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        .active-indicator {
+          position: absolute;
+          left: 0;
+          top: 25%;
+          bottom: 25%;
+          width: 4px;
+          background: #4f46e5; /* Indigo-600 */
+          border-radius: 0 4px 4px 0;
+          box-shadow: 0 0 12px rgba(79, 70, 229, 0.8);
         }
 
         .sidebar-footer {
           display: flex;
-          gap: 1.5rem;
-          padding: 1.5rem;
-          color: white;
+          gap: 1rem;
+          padding: 2rem;
+        }
+
+        .footer-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #a1a1aa;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .footer-icon:hover {
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.1);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
         }
 
         @media (max-width: 768px) {
           .sidebar {
             width: 100%;
-            border-radius: 0 0 25px 25px;
+            border-right: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             flex-direction: row;
             flex-wrap: wrap;
             padding: 0.75rem 1rem;
@@ -234,17 +299,23 @@ export default function Sidebar() {
           .sidebar-top {
             flex-direction: row;
             align-items: center;
-            gap: 1rem;
             flex: 1;
           }
 
           .logo-wrapper {
             padding: 0;
+            gap: 0.75rem;
           }
-          .logo-img {
-            width: 50px;
-            height: 50px;
+          
+          .logo-container {
+            width: 36px;
+            height: 36px;
           }
+          
+          .logo-letter {
+            font-size: 18px;
+          }
+
           .brand-name {
             font-size: 16px;
           }
@@ -252,36 +323,35 @@ export default function Sidebar() {
           .menu {
             flex-direction: row;
             flex-wrap: wrap;
-            margin-top: 0;
             padding: 0;
             gap: 0.5rem;
+            margin-left: auto;
+            margin-right: 1rem;
           }
+          
           .menu-item {
-            padding: 0 1rem;
             height: 40px;
-            font-size: 0.75rem;
-            white-space: nowrap;
+            padding: 0 1rem;
             width: auto;
+          }
+          
+          .menu-item:not(.active):hover {
+            transform: translateY(-2px);
+          }
+          
+          .active-indicator {
+            left: 15%;
+            right: 15%;
+            bottom: 0;
+            top: auto;
+            height: 3px;
+            width: auto;
+            border-radius: 4px 4px 0 0;
           }
 
           .sidebar-footer {
             padding: 0;
-            gap: 1rem;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .menu-item {
-            font-size: 0.7rem;
-            padding: 0 0.75rem;
-            height: 34px;
-          }
-          .brand-name {
-            font-size: 14px;
-          }
-          .logo-img {
-            width: 40px;
-            height: 40px;
+            gap: 0.75rem;
           }
         }
       `}</style>

@@ -2,14 +2,11 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Image from 'next/image'
 import Sidebar from '@/components/sidebar'
 import { Search, Bell } from '@/components/Icons'
-import styles from './accounts.module.css'
 
 type Screen = 'list' | 'add' | 'edit'
 
-// Define what a real account looks like based on your database
 interface Account {
   id: number
   account_number: string
@@ -25,7 +22,6 @@ export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // URL Parameters
   const isEditMode = searchParams.get('mode') === 'edit'
   const accountNumberParam = searchParams.get('accountNumber') || ''
   const nicknameParam = searchParams.get('nickname') || ''
@@ -46,7 +42,7 @@ export default function AccountsPage() {
     nickname: ''
   })
 
-  // ===== NEW: REAL DATA FETCHING =====
+  // ===== REAL DATA FETCHING =====
   useEffect(() => {
     async function fetchAccounts() {
       setIsLoading(true)
@@ -68,7 +64,6 @@ export default function AccountsPage() {
     }
   }, [screen])
 
-  // Load data into forms if in edit mode
   useEffect(() => {
     if (isEditMode) {
       setFormData({
@@ -101,8 +96,6 @@ export default function AccountsPage() {
         if (!value.trim()) error = 'Account name is required'
         else if (value.trim().length < 2)
           error = 'Account name must be at least 2 characters'
-        break
-      default:
         break
     }
     return error
@@ -162,23 +155,10 @@ export default function AccountsPage() {
   const handleAddAccount = (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateForm()) return
-
-    // TODO for Team Odyssey: Wire this up to a real POST /api/accounts endpoint!
     console.log('Needs backend POST implementation:', formData)
     alert('Frontend validation passed! Waiting on backend POST endpoint.')
     resetForm()
     goToList()
-  }
-
-  const handleUpdateAccount = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!formData.accountNumber.trim()) {
-      alert('Please enter an account number first')
-      return
-    }
-    router.push(
-      `/bank-accounts?mode=edit&accountNumber=${formData.accountNumber}&accountName=${formData.accountName || ''}`
-    )
   }
 
   const handleEditNickname = (e: React.FormEvent) => {
@@ -187,7 +167,6 @@ export default function AccountsPage() {
       alert('Please enter a nickname')
       return
     }
-    // TODO for Team Odyssey: Wire this up to a real PUT /api/accounts endpoint!
     alert(`Needs backend PUT implementation to save: ${nickname}`)
     resetForm()
     goToList()
@@ -199,116 +178,134 @@ export default function AccountsPage() {
   }
 
   return (
-    <main className={styles.accountsPage}>
+    <main className="app-container">
+      {/* Cinematic Background Glows */}
+      <div className="bg-glow-1" />
+      <div className="bg-glow-2" />
+
       <Sidebar />
-      <section className={styles.content}>
+
+      <section className="content z-10">
+        {/* Universal Header */}
+        <header className="content-header">
+          <h1 className="page-title">Accounts</h1>
+          <div className="header-actions">
+            <div className="icon-wrapper">
+              <Search size={22} />
+            </div>
+            <div className="icon-wrapper relative">
+              <Bell size={22} />
+              <span className="absolute top-1 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+            </div>
+            <img src="/person-logo.png" alt="Profile" className="avatar" />
+          </div>
+        </header>
+
         {/* ===== LIST SCREEN ===== */}
         {screen === 'list' && (
-          <>
-            <header className={styles.contentHeader}>
-              <h1 className={styles.pageTitle}>Accounts</h1>
-              <div className={styles.headerActions}>
-                <Search size={22} />
-                <Bell size={22} />
-                <div className={styles.avatarPlaceholder}>
-                  <Image
-                    src="/person-logo.png"
-                    alt="Profile"
-                    width={40}
-                    height={40}
-                    style={{ objectFit: 'cover', borderRadius: '50%' }}
-                  />
-                </div>
+          <div className="accounts-grid">
+            {isLoading ? (
+              <div className="flex items-center justify-center w-full col-span-full h-40">
+                <p className="text-gray-400 font-medium animate-pulse">
+                  Loading secure vault...
+                </p>
               </div>
-            </header>
-
-            <div className={styles.cardsContainer}>
-              {isLoading ? (
-                <p>Loading your accounts...</p>
-              ) : accounts.length === 0 ? (
-                <p>No accounts found. Add one below!</p>
-              ) : (
-                accounts.map((acc) => (
-                  <div key={acc.id} className={styles.accountCard}>
-                    <div
-                      className={styles.iconEdit}
+            ) : accounts.length === 0 ? (
+              <div className="flex items-center justify-center w-full col-span-full h-40">
+                <p className="text-gray-400 font-medium">
+                  No accounts found. Create one to get started.
+                </p>
+              </div>
+            ) : (
+              accounts.map((acc) => (
+                <div
+                  key={acc.id}
+                  className="glass-card hover-effect relative group"
+                >
+                  {/* Floating Action Buttons */}
+                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <button
                       onClick={() =>
                         goToEdit(acc.account_number, acc.account_name)
                       }
+                      className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center hover:bg-indigo-500 hover:text-white transition"
+                      title="Edit Account"
                     >
                       ✏️
+                    </button>
+                    <button
+                      className="w-8 h-8 rounded-full bg-red-500/20 text-red-300 flex items-center justify-center hover:bg-red-500 hover:text-white transition"
+                      title="Delete Account"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+
+                  {/* Card Content */}
+                  <div className="flex flex-col items-center mt-2">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-4 border-2 border-white/10">
+                      <span className="text-2xl font-black text-white tracking-tighter">
+                        N
+                      </span>
                     </div>
-                    <div className={styles.iconDelete}>🗑️</div>
-                    <div className={styles.accountCardContent}>
-                      <h2 className={styles.accountName}>{acc.account_name}</h2>
-                      <div className={styles.accountAvatar}>
-                        <div
-                          style={{
-                            width: 100,
-                            height: 100,
-                            backgroundColor: '#eee',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          Bank
-                        </div>
-                      </div>
-                      <p className={styles.accountDetails}>
-                        Account: {acc.account_number} <br />
-                        Balance: Rs. {acc.balance}
+                    <h2 className="text-xl font-bold text-white mb-1">
+                      {acc.account_name}
+                    </h2>
+                    <p className="text-gray-400 text-sm font-mono tracking-wider mb-6">
+                      **** {acc.account_number.slice(-4)}
+                    </p>
+
+                    <div className="w-full bg-black/30 rounded-xl p-4 border border-white/5">
+                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+                        Available Balance
+                      </p>
+                      <p className="text-2xl font-bold text-green-400">
+                        Rs. {acc.balance}
                       </p>
                     </div>
                   </div>
-                ))
-              )}
+                </div>
+              ))
+            )}
 
-              <button className={styles.addAccountCard} onClick={goToAdd}>
-                <h2 className={styles.addAccountTitle}>Add a Bank Account</h2>
-                <div className={styles.addAccountIcon}>+</div>
-              </button>
-            </div>
-          </>
+            {/* Add Account Card */}
+            <button className="glass-card add-card" onClick={goToAdd}>
+              <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-500 flex items-center justify-center mb-4 transition-all duration-300 group-hover:border-indigo-400">
+                <span className="text-3xl text-gray-500 transition-colors duration-300 group-hover:text-indigo-400">
+                  +
+                </span>
+              </div>
+              <h2 className="text-lg font-semibold text-gray-400 transition-colors duration-300 group-hover:text-white">
+                Add New Account
+              </h2>
+            </button>
+          </div>
         )}
 
-        {/* ===== ADD SCREEN ===== */}
-        {screen === 'add' && (
-          <>
-            <header className={styles.contentHeader}>
-              <h1 className={styles.pageTitle}>Accounts</h1>
-              <div className={styles.headerActions}>
-                <Search size={22} />
-                <Bell size={22} />
-              </div>
-            </header>
-            <div className={styles.formContainer}>
-              <div className={styles.formCard}>
-                <div className={styles.formHeader}>
-                  <h2 className={styles.formTitle}>Add Another Bank Account</h2>
-                </div>
-                <form className={styles.formFields}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="accountNumber">Bank Account Number:</label>
-                    <input
-                      type="text"
-                      id="accountNumber"
-                      name="accountNumber"
-                      value={formData.accountNumber}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      className={errors.accountNumber ? styles.inputError : ''}
-                      required
-                    />
-                    {errors.accountNumber && (
-                      <span className={styles.fieldError}>
-                        {errors.accountNumber}
-                      </span>
-                    )}
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="accountName">Bank Account Name:</label>
+        {/* ===== ADD / EDIT SCREENS (Form Layout) ===== */}
+        {(screen === 'add' || screen === 'edit') && (
+          <div className="form-container">
+            <div className="glass-panel form-card">
+              <h2 className="text-2xl font-bold text-white mb-8">
+                {screen === 'add'
+                  ? 'Link New Bank Account'
+                  : 'Edit Account Settings'}
+              </h2>
+
+              <form
+                onSubmit={
+                  screen === 'add' ? handleAddAccount : handleEditNickname
+                }
+                className="space-y-6"
+              >
+                {screen === 'add' && (
+                  <div className="space-y-1.5">
+                    <label
+                      className="text-sm font-medium text-gray-300 ml-1"
+                      htmlFor="accountName"
+                    >
+                      Account Name
+                    </label>
                     <input
                       type="text"
                       id="accountName"
@@ -316,90 +313,197 @@ export default function AccountsPage() {
                       value={formData.accountName}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      className={errors.accountName ? styles.inputError : ''}
-                      required
+                      placeholder="e.g. Primary Savings"
+                      className={`glass-input ${errors.accountName ? 'border-red-500 focus:border-red-500' : ''}`}
                     />
                     {errors.accountName && (
-                      <span className={styles.fieldError}>
+                      <p className="text-red-400 text-xs ml-1 mt-1">
                         {errors.accountName}
-                      </span>
+                      </p>
                     )}
                   </div>
-                  <div className={styles.formActionsBottom}>
-                    <button
-                      type="button"
-                      className={styles.btnCancel}
-                      onClick={handleCancel}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.btnAdd}
-                      onClick={handleAddAccount}
-                    >
-                      Add Account
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </>
-        )}
+                )}
 
-        {/* ===== EDIT SCREEN ===== */}
-        {screen === 'edit' && (
-          <>
-            <header className={styles.contentHeader}>
-              <h1 className={styles.pageTitle}>Accounts</h1>
-            </header>
-            <div className={styles.formContainer}>
-              <div className={styles.formCard}>
-                <div className={styles.formHeader}>
-                  <h2 className={styles.formTitle}>Edit the nickname</h2>
-                </div>
-                <form
-                  onSubmit={handleEditNickname}
-                  className={styles.formFields}
-                >
-                  <div className={styles.formGroup}>
-                    <label htmlFor="accountNumber">Bank Account Number:</label>
-                    <input
-                      type="text"
-                      id="accountNumber"
-                      value={formData.accountNumber || '1234567890'}
-                      disabled
-                      className={styles.inputDisabled}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="nickname">Nickname:</label>
+                <div className="space-y-1.5">
+                  <label
+                    className="text-sm font-medium text-gray-300 ml-1"
+                    htmlFor={screen === 'edit' ? 'nickname' : 'accountNumber'}
+                  >
+                    {screen === 'edit' ? 'Account Nickname' : 'Account Number'}
+                  </label>
+
+                  {screen === 'edit' ? (
                     <input
                       type="text"
                       id="nickname"
                       value={nickname}
                       onChange={(e) => setNickname(e.target.value)}
-                      required
+                      placeholder="e.g. Travel Fund"
+                      className="glass-input"
+                    />
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        id="accountNumber"
+                        name="accountNumber"
+                        value={formData.accountNumber}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        placeholder="0000000000"
+                        className={`glass-input font-mono ${errors.accountNumber ? 'border-red-500 focus:border-red-500' : ''}`}
+                      />
+                      {errors.accountNumber && (
+                        <p className="text-red-400 text-xs ml-1 mt-1">
+                          {errors.accountNumber}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {screen === 'edit' && (
+                  <div className="space-y-1.5">
+                    <label
+                      className="text-sm font-medium text-gray-500 ml-1"
+                      htmlFor="accountNumber"
+                    >
+                      Account Number (Locked)
+                    </label>
+                    <input
+                      type="text"
+                      id="accountNumber"
+                      value={formData.accountNumber || '1234567890'}
+                      disabled
+                      className="glass-input opacity-50 cursor-not-allowed font-mono"
                     />
                   </div>
-                  <div className={styles.formActionsBottom}>
-                    <button
-                      type="button"
-                      className={styles.btnCancel}
-                      onClick={handleCancel}
-                    >
-                      Cancel
-                    </button>
-                    <button type="submit" className={styles.btnUpdate}>
-                      UPDATE
-                    </button>
-                  </div>
-                </form>
-              </div>
+                )}
+
+                {/* Form Buttons */}
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="button"
+                    className="btn-secondary flex-1"
+                    onClick={handleCancel}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary flex-1">
+                    {screen === 'add' ? 'Link Account' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
             </div>
-          </>
+          </div>
         )}
       </section>
+
+      {/* Embedded Styles matching the Dashboard Cinematic Theme */}
+      <style jsx>{`
+        .app-container {
+          width: 100vw;
+          min-height: 100vh;
+          background: #09090b;
+          display: flex;
+          overflow: hidden;
+          font-family: system-ui, -apple-system, sans-serif;
+          position: relative;
+          color: #ffffff;
+        }
+
+        .bg-glow-1 {
+          position: absolute; top: -10%; left: -10%; width: 600px; height: 600px;
+          background: rgba(79, 70, 229, 0.15); border-radius: 50%; filter: blur(120px); pointer-events: none;
+        }
+
+        .bg-glow-2 {
+          position: absolute; bottom: -10%; right: -10%; width: 500px; height: 500px;
+          background: rgba(147, 51, 234, 0.1); border-radius: 50%; filter: blur(100px); pointer-events: none;
+        }
+
+        .content {
+          flex: 1; padding: 2rem 2.5rem; overflow-y: auto; min-width: 0;
+        }
+
+        .content-header {
+          display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;
+        }
+
+        .page-title {
+          font-size: 32px; font-weight: 700; letter-spacing: -0.5px;
+          background: linear-gradient(to right, #ffffff, #a1a1aa);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .header-actions { display: flex; align-items: center; gap: 1.5rem; }
+
+        .icon-wrapper {
+          width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;
+          background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 50%; cursor: pointer; transition: all 0.2s ease; color: #a1a1aa;
+        }
+        .icon-wrapper:hover { background: rgba(79, 70, 229, 0.2); color: #ffffff; border-color: rgba(79, 70, 229, 0.5); }
+
+        .avatar {
+          width: 45px; height: 45px; border-radius: 50%; object-fit: cover;
+          border: 2px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.2s ease;
+        }
+        .avatar:hover { border-color: #4f46e5; transform: scale(1.05); }
+
+        .glass-panel {
+          background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+          border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Accounts Grid Styling */
+        .accounts-grid {
+          display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;
+        }
+
+        .glass-card {
+          background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(24px);
+          border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px;
+          padding: 1.5rem; position: relative; overflow: hidden; transition: all 0.3s ease;
+        }
+        .glass-card.hover-effect:hover {
+          transform: translateY(-4px); border-color: rgba(79, 70, 229, 0.4);
+          box-shadow: 0 20px 40px -10px rgba(79, 70, 229, 0.15);
+        }
+
+        .add-card {
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          min-height: 250px; border: 2px dashed rgba(255,255,255,0.1); background: transparent; cursor: pointer;
+        }
+        .add-card:hover { border-color: rgba(79, 70, 229, 0.5); background: rgba(79, 70, 229, 0.05); }
+
+        /* Form Styling */
+        .form-container { display: flex; justify-content: center; align-items: flex-start; padding-top: 2rem; }
+        .form-card { width: 100%; max-width: 500px; border-radius: 32px; padding: 2.5rem; }
+        
+        .glass-input {
+          width: 100%; height: 56px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(0,0,0,0.2); padding: 0 1.25rem; color: white; outline: none; transition: all 0.2s;
+        }
+        .glass-input:focus { border-color: #4f46e5; background: rgba(0,0,0,0.4); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+
+        .btn-primary {
+          height: 56px; border-radius: 16px; background: #4f46e5; color: white; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none;
+        }
+        .btn-primary:hover { background: #4338ca; transform: translateY(-1px); box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4); }
+
+        .btn-secondary {
+          height: 56px; border-radius: 16px; background: rgba(255,255,255,0.05); color: white; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+
+        @media (max-width: 768px) {
+          .app-container { flex-direction: column; }
+          .content { padding: 1.5rem 1rem; }
+          .accounts-grid { grid-template-columns: 1fr; }
+          .form-card { padding: 1.5rem; }
+        }
+      `}</style>
     </main>
   )
 }

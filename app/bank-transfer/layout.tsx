@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Bank Transfer',
-  description: 'Transfer money to another account'
+  title: 'Bank Transfer | Nova Bank',
+  description: 'Securely transfer money to another account'
 }
 
 export default function BankTransferLayout({
